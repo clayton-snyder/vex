@@ -313,6 +313,38 @@ static void fmt_ud(void *_, int width, void *_field) /* {{{ */
 		break;
 	}
 } /* }}} */
+static void fmt_ux(void *_, int width, void *_field) /* {{{ */
+{
+	int left;
+	LAYOUT *l;
+
+	l = (LAYOUT*)_;
+	left = l->len - (l->offset + l->pos);
+
+	switch (width) {
+	case 8:
+		wprintw(l->status, "% 2x", as_u8(DATA_AT(l, l->pos)));
+		break;
+
+	case 16:
+		if (left >= 2) wprintw(l->status, "% 4x", as_u16(DATA_AT(l, l->pos)));
+		else           wprintw(l->status, "% 4s", ""); // TODO: what goes here?
+		break;
+	case 32:
+		if (left >= 4) wprintw(l->status, "% 8x", as_u32(DATA_AT(l, l->pos)));
+		else           wprintw(l->status, "% 8s", ""); // TODO: what goes here?
+		break;
+
+	case 64:
+		if (left >= 8) wprintw(l->status, "% 16x", as_u64(DATA_AT(l, l->pos)));
+		else           wprintw(l->status, "% 16s", ""); // TODO: what goes here?
+		break;
+
+	default:
+		wprintw(l->status, "!!!");
+		break;
+	}
+} /* }}} */
 static void fmt_sd(void *_, int width, void *_field) /* {{{ */
 {
 	int left;
@@ -653,11 +685,17 @@ int parse_status(const char *s, FIELD *fields)
 		switch (*b) {
 		case 'u':
 			b++;
-			if (*b != 'd') {
+            // TODO: refactor
+            if (*b == 'x') {
+			    if (fields) fields[nfields].fmt = fmt_ux;
+            }
+            else if (*b == 'd') {
+			    if (fields) fields[nfields].fmt = fmt_ud;
+            }
+            else {
 				printw("invalid format code '%%%du%c'\n", w, *b);
 				return -1;
 			}
-			if (fields) fields[nfields].fmt = fmt_ud;
 			break;
 
 		case 's':
